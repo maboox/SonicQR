@@ -1,0 +1,34 @@
+{
+  "name": "audio-qr",
+  "version": "1.0.0",
+  "description": "A bilingual offline Audio QR encoder and decoder",
+  "main": "main.cjs",
+  "author": "Audio QR contributors",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "web": "node scripts/build-web.cjs",
+    "start": "npm run web && electron .",
+    "dist:win": "npm run web && electron-builder --win nsis --x64",
+    "android:add": "npm run web && cap add android",
+    "android:sync": "npm run web && cap sync android",
+    "android:debug": "npm run android:sync && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "app.audioqr.desktop",
+    "productName": "Audio QR",
+    "directories": {"output": "dist"},
+    "files": ["www/**/*", "main.cjs", "package.json"],
+    "win": {"target": [{"target": "nsis", "arch": ["x64"]}], "artifactName": "Audio-QR-${version}-Setup.${ext}"},
+    "nsis": {"oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true}
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "appId": "app.audioqr.mobile",
+  "appName": "Audio QR",
+  "webDir": "www",
+  "server": {"androidScheme": "https"}
+}
