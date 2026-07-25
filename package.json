@@ -9,7 +9,7 @@
   "scripts": {
     "web": "node scripts/build-web.cjs",
     "start": "npm run web && electron .",
-    "dist:win": "npm run web && electron-builder --win nsis --x64",
+    "dist:win": "npm run web && electron-builder --win nsis --x64 --publish never",
     "android:add": "npm run web && cap add android",
     "android:sync": "npm run web && cap sync android",
     "android:debug": "npm run android:sync && cd android && ./gradlew assembleDebug"

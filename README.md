@@ -85,7 +85,7 @@ Microphone access generally requires `localhost`, HTTPS, or an installed applica
 
 Requirements:
 
-- Node.js 22 or newer
+- Node.js 24 or newer
 - npm
 
 Install dependencies:
