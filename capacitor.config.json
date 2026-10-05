@@ -2,5 +2,18 @@
   "appId": "app.audioqr.mobile",
   "appName": "Audio QR",
   "webDir": "www",
-  "server": {"androidScheme": "https"}
+  "server": {
+    "androidScheme": "https",
+    "hostname": "localhost"
+  },
+  "android": {
+    "backgroundColor": "#f6f8fb",
+    "allowMixedContent": false,
+    "adjustMarginsForEdgeToEdge": "auto"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": false
+    }
+  }
 }

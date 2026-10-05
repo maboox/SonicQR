@@ -1,28 +1,59 @@
 name: Build Audio QR
 
 on:
-  workflow_dispatch:
   push:
-    tags:
-      - "v*"
+    branches: ['**']
+    tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: audio-qr-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  verify:
+    name: Codec and interface checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run web
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:ui
+      - name: Upload interface previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audio-qr-interface-previews
+          path: qa/*.png
+          if-no-files-found: ignore
+
   windows:
-    name: Windows EXE
+    name: Windows installer and portable EXE
+    needs: verify
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      - name: Install dependencies
-        run: npm install
-      - name: Build Windows installer
+          cache: npm
+      - run: npm ci
+      - name: Check Electron permissions and native saving
+        run: npx electron --use-fake-device-for-media-stream tests/electron-smoke.cjs
+      - name: Build Windows executables
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npm run dist:win
-      - name: Upload EXE
+      - name: Upload Windows executables
         uses: actions/upload-artifact@v4
         with:
           name: audio-qr-windows
@@ -31,32 +62,59 @@ jobs:
 
   android:
     name: Android APK
+    needs: verify
     runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+          cache: npm
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
-      - name: Install dependencies
-        run: npm install
-      - name: Prepare web assets
-        run: npm run web
-      - name: Create Android project
-        run: npx cap add android
-      - name: Sync Android project
-        run: npx cap sync android
-      - name: Build debug APK
-        working-directory: android
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - run: npm run android:prepare
+      - name: Restore optional release key
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        shell: bash
         run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
-      - name: Upload APK
+          python3 - <<'PY'
+          import os, base64, pathlib
+          required = ['ANDROID_KEYSTORE_PASSWORD', 'ANDROID_KEY_ALIAS', 'ANDROID_KEY_PASSWORD']
+          if any(not os.environ.get(name) for name in required):
+              raise SystemExit('Set all four ANDROID signing secrets, or remove ANDROID_KEYSTORE_BASE64 for a debug build.')
+          path = pathlib.Path(os.environ['RUNNER_TEMP']) / 'audio-qr-release.jks'
+          path.write_bytes(base64.b64decode(os.environ['ANDROID_KEYSTORE_BASE64'], validate=True))
+          with open(os.environ['GITHUB_ENV'], 'a') as out:
+              out.write('ANDROID_KEYSTORE_FILE=' + str(path) + '\n')
+          PY
+      - name: Build APK and check Android lint
+        working-directory: android
+        shell: bash
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_FILE" ]; then
+            bash ./gradlew assembleRelease lintRelease --no-daemon
+          else
+            bash ./gradlew assembleDebug lintDebug --no-daemon
+          fi
+      - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
           name: audio-qr-android
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
+      - name: Remove temporary signing file
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/audio-qr-release.jks"

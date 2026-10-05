@@ -1,34 +1,74 @@
 {
   "name": "audio-qr",
-  "version": "1.0.0",
-  "description": "A bilingual offline Audio QR encoder and decoder",
+  "version": "1.1.0",
+  "description": "Offline sound messaging for Android and Windows",
   "main": "main.cjs",
   "author": "Audio QR contributors",
   "license": "MIT",
   "private": true,
   "scripts": {
     "web": "node scripts/build-web.cjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:ui": "node tests/ui-smoke.cjs",
     "start": "npm run web && electron .",
-    "dist:win": "npm run web && electron-builder --win nsis --x64 --publish never",
-    "android:add": "npm run web && cap add android",
-    "android:sync": "npm run web && cap sync android",
-    "android:debug": "npm run android:sync && cd android && ./gradlew assembleDebug"
+    "dist:win": "npm run web && electron-builder --win nsis portable --x64 --publish never",
+    "android:prepare": "npm run web && node scripts/prepare-android.cjs",
+    "android:sync": "npm run android:prepare",
+    "android:debug": "npm run android:prepare && cd android && bash ./gradlew assembleDebug"
   },
   "dependencies": {
-    "@capacitor/android": "^7.4.3",
-    "@capacitor/core": "^7.4.3"
+    "@capacitor/android": "7.6.9",
+    "@capacitor/app": "7.1.2",
+    "@capacitor/core": "7.6.9",
+    "fflate": "0.8.3"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.4.3",
-    "electron": "^37.2.0",
-    "electron-builder": "^26.0.12"
+    "@capacitor/cli": "7.6.9",
+    "@playwright/test": "1.56.1",
+    "electron": "42.11.10",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.2"
   },
   "build": {
     "appId": "app.audioqr.desktop",
     "productName": "Audio QR",
-    "directories": {"output": "dist"},
-    "files": ["www/**/*", "main.cjs", "package.json"],
-    "win": {"target": [{"target": "nsis", "arch": ["x64"]}], "artifactName": "Audio-QR-${version}-Setup.${ext}"},
-    "nsis": {"oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true}
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "www/**/*",
+      "main.cjs",
+      "preload.cjs",
+      "package.json",
+      "assets/icon.png"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Audio-QR-${version}-${arch}-Setup.${ext}",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Audio-QR-${version}-${arch}-Setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "Audio-QR-${version}-Portable.${ext}"
+    }
   }
 }

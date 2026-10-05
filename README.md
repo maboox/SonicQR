@@ -1,326 +1,139 @@
-# Audio QR
+# Audio QR · نسخهٔ ۱٫۱٫۰
 
-**Audio QR** is an offline, bilingual web application that encodes short text messages into sound and decodes them again through an audio file or microphone recording. It can be used as a secondary channel when a camera, printed QR code, NFC, Bluetooth, or network connection is unavailable.
+برنامهٔ آفلاین ارسال پیام کوتاه با صدا، برای **اندروید و ویندوز**. ایدهٔ پروژهٔ اولیه حفظ شده است: متن به سیگنال صوتی تبدیل می‌شود و گیرنده، متن را از فایل یا میکروفون استخراج می‌کند. رابط فارسی و انگلیسی، حالت روشن و تیره، رمزگذاری اختیاری و ترکیب با وویس دارد.
 
-The interface supports **English and Persian (فارسی)** and can be packaged as a Windows application or Android application.
+## دریافت APK و EXE از GitHub — بدون نیاز به Android Studio
 
-> Audio QR is an experimental acoustic data transport, not a replacement for conventional QR codes in every environment.
+1. ZIP را از حالت فشرده خارج کن.
+2. **محتویات داخل پوشهٔ پروژه را در ریشهٔ مخزن قبلی جایگزین کن**؛ فایل `package.json` و پوشهٔ `.github` باید در ریشهٔ مخزن باشند. فقط خود فایل ZIP را در مخزن آپلود نکن.
+3. فایل‌های داخل `.github/workflows`، `native`، `scripts`، `src`، `assets` و `android` و همچنین `package-lock.json` را همراه بقیهٔ سورس پوش کن. هیچ کدام از فایل‌های `.jks` یا رمزها را پوش نکن.
+4. با هر Push، اکشن **Build Audio QR** اجرا می‌شود. اجرای دستی از **Actions → Build Audio QR → Run workflow** هم ممکن است.
+5. ابتدا تست‌ها اجرا می‌شوند؛ سپس APK اندروید و دو EXE ویندوز ساخته می‌شوند.
+6. در صفحهٔ اجرای موفق، از بخش **Artifacts** این خروجی‌ها را دانلود کن:
+   - `audio-qr-android`: فایل APK.
+   - `audio-qr-windows`: نصب‌کنندهٔ ویندوز و نسخهٔ Portable؛ نسخهٔ Portable نیاز به نصب ندارد.
+   - `audio-qr-interface-previews`: تصاویر رابط تولیدشده در تست خودکار.
 
-## Features
+**برای بیلد آزمایشی هیچ Secret لازم نیست.** APK با کلید توسعهٔ همان محیط ساخته می‌شود؛ EXE امضای تجاری ندارد. ویندوز ممکن است برای فایل بدون امضای تجاری هشدار نشان دهد.
 
-- Fully local processing; message and audio stay on the device
-- English and Persian interface with automatic language detection
-- UTF-8 text support, including Persian and emoji
-- Two transmission profiles:
-  - **Fast & audible:** short and robust 16-FSK signal
-  - **Low-audibility over voice:** high-frequency signal mixed into speech or music
-- Record a cover voice for exactly the required duration
-- Select an existing voice or music file as cover audio
-- Automatic mixing and downloadable mixed WAV output
-- Play and download standalone signal WAV files
-- Decode from WAV, MP3, M4A, WebM, or a live microphone recording
-- Automatic profile detection
-- Optional AES-GCM message encryption
-- PBKDF2-SHA-256 password-based key derivation with a random salt
-- Deflate compression when it makes the payload smaller
-- CRC-16 integrity checking
-- Responsive desktop and mobile UI
-- GitHub Actions for Windows EXE and Android APK artifacts
+### نصب و به‌روزرسانی اندروید
 
-## How it works
+شناسهٔ برنامهٔ قبلی (`app.audioqr.mobile`) حفظ شده، نسخه به `1.1.0` و `versionCode` به `2` افزایش یافته است. نصب جایگزین فقط با **همان کلید امضای قبلی** ممکن است. کلید توسعهٔ تصادفی بیلدهای GitHub ممکن است متفاوت باشد؛ اگر نصب APK آزمایشی جدید به‌علت اختلاف امضا رد شد، نسخهٔ آزمایشی قبلی را حذف کن. برنامه تاریخچهٔ پیام یا رمز ذخیره نمی‌کند؛ فایل‌های صوتی‌ای که خودت ذخیره کرده‌ای، مستقل‌اند.
 
-Audio QR serializes a packet containing a protocol header, profile identifier, flags, payload length, payload, and CRC-16 checksum. Each byte is split into two 4-bit symbols and transmitted using 16-FSK.
+برای داشتن امضای ثابت و به‌روزرسانی‌های بعدی، در **Settings → Secrets and variables → Actions** این چهار Secret را تعریف کن:
 
-### Fast profile
+| نام Secret | مقدار |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | محتوای فایل keystore به‌صورت Base64، بدون خط جدید |
+| `ANDROID_KEYSTORE_PASSWORD` | رمز keystore |
+| `ANDROID_KEY_ALIAS` | alias کلید |
+| `ANDROID_KEY_PASSWORD` | رمز کلید |
 
-The audible profile uses frequencies between approximately 1 kHz and 7 kHz. It is intended for reliable playback through ordinary speakers and capture through ordinary microphones.
+با وجود این چهار مورد، اکشن APK انتشار را امضا می‌کند؛ در غیر این صورت APK آزمایشی می‌سازد. کلید را برای تمام نسخه‌های بعدی ثابت نگه دار. برای ساخت keystore می‌توان از ابزار رسمی Java `keytool` استفاده کرد؛ رمزها یا خود فایل کلید را در سورس قرار نده.
 
-### Low-audibility profile
+## روش استفاده
 
-The low-audibility profile uses frequencies near the upper end of the audible range. The signal can be mixed into a normal voice or music recording at one of three strength levels:
+### ارسال شنیداری
 
-- **Subtle:** least noticeable, more sensitive to devices and compression
-- **Balanced:** recommended default
-- **Robust:** more reliable but potentially more noticeable
+1. در بخش «ارسال»، پیام را بنویس؛ سقف ۵۰۰ نویسه و ۲۰۰۰ بایت UTF-8 است.
+2. حالت «واضح و شنیداری» را انتخاب کن. این حالت برای اولین آزمایش و انتقال با بلندگو بهتر است.
+3. اگر لازم است، بخش «محافظت با رمز» را باز و رمز تعیین کن.
+4. «ساخت صدا» را بزن؛ صدا را پخش یا WAV را ذخیره کن.
 
-The decoder searches for both profiles automatically.
+### ترکیب با وویس
 
-## Security model
+1. حالت «ترکیب با وویس» را انتخاب و سیگنال را بساز.
+2. قدرت سیگنال را تعیین کن؛ «متعادل» پیش‌فرض است.
+3. یک وویس به‌اندازهٔ زمان موردنیاز ضبط کن یا فایل صوتی انتخاب کن. ضبط در زمان لازم خودکار متوقف می‌شود و توقف دستی هم دارد.
+4. اگر صدای انتخابی کوتاه باشد، به‌اندازهٔ پیام تکرار می‌شود و برنامه این موضوع را نشان می‌دهد.
+5. فایل **ترکیبی** را ذخیره یا در اندروید اشتراک‌گذاری کن. دانلود «سیگنال» به‌تنهایی، فایل ترکیبی نیست.
 
-Low-audibility audio is **not encryption**. A person or device that records the audio may preserve, analyze, or replay the embedded signal.
+فرکانس‌های حدود ۱۴٫۵ تا ۱۹٫۳ کیلوهرتز در همهٔ بلندگوها و میکروفون‌ها یکسان منتقل نمی‌شوند. فرمت‌های فشرده و وویس پیام‌رسان‌ها ممکن است این فرکانس‌ها را حذف کنند. این محدودیت فیزیکی است؛ در این حالت WAV اصلی یا حالت شنیداری را استفاده کن.
 
-For sensitive messages, set a password. The application then:
+### دریافت
 
-1. Compresses the message when compression reduces its size.
-2. Generates a random salt and IV.
-3. Derives a 256-bit key with PBKDF2-SHA-256 and 100,000 iterations.
-4. Encrypts the payload with AES-GCM.
-5. Adds CRC-16 to detect transmission damage.
+- **میکروفون:** ابتدا ضبط را شروع کن، سپس صدا را روی دستگاه فرستنده پخش کن و بعد از پایان، «توقف و خواندن پیام» را بزن. ضبط صدای خام است و حداکثر ۲ دقیقه طول می‌کشد. هنگام رفتن به پس‌زمینه یا لغو، میکروفون آزاد می‌شود.
+- **فایل صوتی:** فایل اصلی را انتخاب کن. WAV بهترین گزینه است؛ پشتیبانی از MP3، M4A، WebM و سایر فرمت‌ها به decoder سیستم بستگی دارد. سقف فایل ۲۵ مگابایت و ۲ دقیقه است.
+- **پیام رمزدار:** رمز را وارد کن و «خواندن دوبارهٔ پیام» را بزن. بستهٔ پیدا‌شده در حافظه نگه داشته می‌شود؛ لازم نیست دوباره ضبط کنی.
+- روی اندروید دسترسی میکروفون هنگام اولین ضبط درخواست می‌شود. اگر قبلاً رد شده، از گزینهٔ تنظیمات میکروفون اجازه بده.
+- روی ویندوز، دسترسی میکروفون برای برنامه‌های دسکتاپ در تنظیمات Privacy باید فعال باشد.
 
-Current limitations:
+## مهم‌ترین اصلاحات این نسخه
 
-- No sender authentication
-- No replay protection
-- No key exchange protocol
-- Password strength depends on the user
-- Generated EXE and debug APK files are unsigned by default
+- کد بومی دسترسی میکروفون، manifest صحیح، پاسخ روشن به رد دسترسی و باز کردن تنظیمات.
+- ذخیرهٔ WAV از پنجرهٔ استاندارد سیستم و اشتراک‌گذاری بومی در اندروید؛ بدون مجوز کلی حافظه.
+- ضبط PCM از AudioWorklet و جایگزین PCM برای WebView قدیمی؛ حذف وابستگی به ضبط Opus برای سیگنال.
+- تشخیص چند محل احتمالی شروع پیام، سکوت ابتدایی، فیلتر سیگنال فرکانس‌بالا و بررسی CRC.
+- تحلیل صدا در Worker با امکان لغو و محدودیت زمان؛ جلوگیری از هنگ رابط.
+- رفع خروجی‌های قدیمی پس از ویرایش متن، رمز و حالت انتقال؛ بازسازی خروجی پس از تغییر قدرت سیگنال.
+- مدیریت تداخل ضبط‌ها، تایمر، سطح صدا، توقف خودکار، آزاد کردن منابع و لغو.
+- رمزگشایی مجدد با رمز صحیح بدون ضبط مجدد؛ اعتبارسنجی ورودی و محدودیت فایل و بازکردن فشرده‌سازی.
+- بازطراحی کامل رابط فارسی/انگلیسی، RTL، موبایل/دسکتاپ، آیکون‌های مرتبط، راهنما و حالت تیره.
+- محیط امن محلی Electron، محدود کردن دسترسی‌ها، جلوگیری از باز شدن پنجره و ناوبری خارجی و ذخیرهٔ فایل با IPC محدود.
+- بیلد خودکار با هر Push، وابستگی‌های قفل‌شده، تست خودکار و امکان امضای ثابت APK.
 
-## Browser usage
+## اجرای توسعه
 
-The simplest method is to serve the project locally:
-
-```bash
-python3 -m http.server 8080
-```
-
-Then open:
-
-```text
-http://localhost:8080
-```
-
-Microphone access generally requires `localhost`, HTTPS, or an installed application. Opening `index.html` directly may restrict microphone permissions in some browsers.
-
-## Development
-
-Requirements:
-
-- Node.js 24 or newer
-- npm
-
-Install dependencies:
+نیازمندی‌ها: Node.js 24، npm؛ برای بیلد بومی اندروید Java 21 و Android SDK 35. Android 6 یا جدیدتر با WebView به‌روز، و Windows 10/11 x64 هدف این پروژه‌اند.
 
 ```bash
-npm install
-```
-
-Prepare the web assets:
-
-```bash
+npm ci
+npm test
 npm run web
-```
-
-Run the Electron desktop application:
-
-```bash
 npm start
 ```
 
-## Build Windows EXE locally
-
-On Windows:
+نسخهٔ وب را باید از مسیر `www` با localhost یا HTTPS اجرا کرد؛ باز کردن `index.html` با دوبارکلیک، روش اجرای پشتیبانی‌شده نیست.
 
 ```bash
-npm install
+python3 -m http.server 8080 --directory www
+```
+
+تست رابط:
+
+```bash
+npx playwright install chromium
+npm run test:ui
+```
+
+بیلد ویندوز، روی ویندوز:
+
+```bash
 npm run dist:win
 ```
 
-The installer is written to `dist/`.
-
-The default build is not code-signed. Windows SmartScreen may display a warning until a trusted code-signing certificate is configured.
-
-## Build Android APK locally
-
-Requirements:
-
-- Android Studio or Android SDK
-- Java 21
-- Android build tools
-
-Create and synchronize the Capacitor Android project:
+بیلد اندروید:
 
 ```bash
-npm install
-npm run web
-npx cap add android
-npx cap sync android
-```
-
-Build a debug APK:
-
-```bash
+npm run android:prepare
 cd android
-./gradlew assembleDebug
+bash ./gradlew assembleDebug lintDebug
 ```
 
-Output:
+روی ویندوز از `gradlew.bat assembleDebug lintDebug` استفاده کن. اسکریپت آماده‌سازی اگر لازم باشد پروژهٔ اندروید را می‌سازد و سپس کد بومی، دسترسی، آیکون، نسخه و فایل‌های وب را همگام می‌کند. Gradle Wrapper در سورس موجود است. مسیرهای SDK، کش و ابزارهای نصب‌شدهٔ توسعه در ZIP قرار نمی‌گیرند.
 
-```text
-android/app/build/outputs/apk/debug/app-debug.apk
-```
+## معماری و سازگاری
 
-On Windows, run `gradlew.bat assembleDebug` instead.
+| مسیر | مسئولیت |
+| --- | --- |
+| `src/codec.mjs` | بستهٔ نسخهٔ ۳، UTF-8، فشرده‌سازی، AES-GCM، FSK، WAV، ترکیب و تشخیص |
+| `src/decoder.worker.mjs` | تحلیل مستقل از رابط |
+| `src/audio.mjs`, `src/recorder.worklet.js` | خواندن فایل و ضبط PCM |
+| `src/platform.mjs` | اتصال قابلیت‌های اندروید، ویندوز و وب |
+| `src/app.mjs`, `src/styles.css`, `src/i18n.mjs`, `src/icons.mjs` | رابط، وضعیت‌ها، ترجمه و آیکون |
+| `native/android` | دسترسی، ذخیره، اشتراک‌گذاری و امضای اختیاری |
+| `android` | پروژهٔ بومی و Gradle Wrapper |
+| `main.cjs`, `preload.cjs` | محیط امن Electron و ذخیرهٔ فایل |
+| `.github/workflows/build.yml` | تست و ساخت APK/EXE |
 
-## GitHub Actions
+بستهٔ صوتی نسخهٔ ۳ و پارامترهای رمزگذاری قبلی حفظ شده‌اند تا فایل‌های قدیمی قابل خواندن باشند. پیام‌ها و رمزها روی دیسک ذخیره نمی‌شوند. فقط زبان رابط ذخیره می‌شود. فایل‌های اشتراک‌گذاری اندروید موقتاً در cache قرار می‌گیرند و موارد قدیمی هنگام اشتراک بعدی پاک می‌شوند.
 
-The workflow is located at:
+گزارش دقیق تست‌ها و محدودیت‌های بررسی در `VALIDATION.md` است.
 
-```text
-.github/workflows/build.yml
-```
+## English quick start
 
-It starts when:
+Extract the ZIP and push its **contents** to your repository root, including `.github`, `android`, `native`, `src`, `assets`, and `package-lock.json`. Every push runs tests and builds an Android APK plus Windows installer/portable EXEs. No secrets are needed for a debug build. Optional stable Android release signing uses the four secrets in the table above.
 
-- A tag matching `v*` is pushed, for example `v1.0.0`
-- It is started manually from the **Actions** tab with `workflow_dispatch`
+The app processes everything locally. Microphone recordings use raw PCM; decoding runs in a worker. It supports English/Persian, dark mode, v3 acoustic packets, optional AES-GCM encryption, cover-audio mixing, native Android save/share and Windows save dialogs. Acoustic reliability depends on the physical devices, room and audio compression. Prefer the original WAV or the audible profile.
 
-It creates two downloadable workflow artifacts:
-
-- `audio-qr-windows` containing the Windows installer EXE
-- `audio-qr-android` containing the Android debug APK
-
-Example release build:
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-After the workflow finishes, open the workflow run and download the artifacts from the **Artifacts** section.
-
-### Production signing
-
-The included workflow creates unsigned/development artifacts. For public releases:
-
-- Configure Windows code signing in electron-builder using encrypted GitHub secrets.
-- Configure an Android release keystore and build a signed release APK or AAB.
-- Never commit certificates, keystores, or passwords to the repository.
-
-## Recommended audio practices
-
-- Prefer WAV for maximum reliability.
-- Avoid repeated MP3 conversion.
-- Messaging applications may remove high frequencies or apply aggressive noise reduction.
-- Use moderate speaker volume and keep the microphone reasonably close.
-- For the low-audibility profile, test on the exact target devices.
-- Select **Robust** strength when reliability is more important than subtlety.
-- Use the original mixed WAV when possible.
-
-## Project structure
-
-```text
-.
-├── index.html                  # Bilingual Audio QR application
-├── main.cjs                    # Electron desktop entry point
-├── capacitor.config.json       # Android/Capacitor configuration
-├── package.json                # Scripts and build configuration
-├── scripts/
-│   └── build-web.cjs           # Prepares the www directory
-├── .github/workflows/
-│   └── build.yml               # EXE and APK builds
-├── SECURITY.md
-├── LICENSE
-└── README.md
-```
-
-## Privacy
-
-The application performs encoding, decoding, recording, encryption, and audio mixing locally. It does not include analytics, advertising, or a network API.
-
-## Compatibility
-
-Recommended:
-
-- Recent Chromium, Chrome, Edge, or Android WebView
-- Electron build provided by this repository
-- A device capable of 48 kHz audio playback and recording
-
-High-frequency performance varies significantly between speakers and microphones.
-
-## License
-
-MIT License. See `LICENSE`.
-
----
-
-# راهنمای فارسی
-
-**Audio QR یا QR صوتی** یک برنامه آفلاین و دوزبانه برای تبدیل پیام‌های متنی کوتاه به صدا و استخراج دوباره آن‌ها از فایل صوتی یا میکروفون است. این روش می‌تواند وقتی دوربین، QR چاپی، NFC، بلوتوث یا اینترنت در دسترس نیست، به‌عنوان یک کانال ثانویه استفاده شود.
-
-## امکانات
-
-- پردازش کاملاً محلی و بدون ارسال پیام یا صدا به سرور
-- رابط فارسی و انگلیسی
-- پشتیبانی از متن UTF-8، فارسی و ایموجی
-- حالت سریع و شنیداری با سیگنال کوتاه 16-FSK
-- حالت کم‌شنیدار با امکان قرار دادن پیام روی وویس یا آهنگ
-- ضبط خودکار صدای پوششی به‌اندازه زمان موردنیاز
-- انتخاب فایل صوتی موجود به‌عنوان صدای پوششی
-- ترکیب خودکار و دانلود فایل WAV نهایی
-- پخش و دانلود سیگنال مستقل
-- رمزگشایی از فایل صوتی یا ضبط مستقیم میکروفون
-- تشخیص خودکار نوع سیگنال
-- رمزنگاری اختیاری AES-GCM
-- استخراج کلید با PBKDF2-SHA-256 و salt تصادفی
-- فشرده‌سازی پیام در صورت کوتاه‌ترشدن خروجی
-- کنترل سلامت پیام با CRC-16
-- رابط واکنش‌گرا برای موبایل و دسکتاپ
-- اکشن گیت‌هاب برای ساخت EXE ویندوز و APK اندروید
-
-## حالت‌های انتقال
-
-### سریع و شنیداری
-
-این حالت از فرکانس‌های حدود ۱ تا ۷ کیلوهرتز استفاده می‌کند و برای انتقال مقاوم‌تر از طریق بلندگو و میکروفون معمولی طراحی شده است.
-
-### کم‌شنیدار روی وویس
-
-در این حالت پیام در فرکانس‌های بالاتر قرار می‌گیرد و با یک وویس یا آهنگ ترکیب می‌شود. سه سطح قدرت وجود دارد:
-
-- **ظریف:** کمتر قابل‌شنیدن ولی حساس‌تر به فشرده‌سازی و کیفیت دستگاه
-- **متعادل:** حالت پیشنهادی
-- **قوی:** رمزگشایی مطمئن‌تر ولی احتمال شنیده‌شدن بیشتر
-
-## نکته امنیتی مهم
-
-کم‌شنیدار یا پنهان‌بودن سیگنال به معنی رمزنگاری نیست. هر دستگاهی که صدا را ضبط کند ممکن است آن را ذخیره، تحلیل یا دوباره پخش کند.
-
-برای اطلاعات حساس حتماً رمز تعیین کنید. در این حالت payload با AES-GCM رمز می‌شود. این نسخه هنوز احراز هویت فرستنده و جلوگیری از Replay Attack ندارد.
-
-## اجرای نسخه مرورگر
-
-```bash
-python3 -m http.server 8080
-```
-
-سپس آدرس زیر را باز کنید:
-
-```text
-http://localhost:8080
-```
-
-برای دسترسی میکروفون بهتر است برنامه از localhost، HTTPS یا نسخه نصب‌شده اجرا شود.
-
-## ساخت EXE و APK با GitHub Actions
-
-فایل workflow در مسیر زیر قرار دارد:
-
-```text
-.github/workflows/build.yml
-```
-
-برای اجرای دستی، وارد تب **Actions** مخزن شوید و workflow را اجرا کنید. همچنین با ساخت tag نیز بیلد شروع می‌شود:
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-پس از پایان workflow دو Artifact در دسترس خواهد بود:
-
-- `audio-qr-windows`: نصب‌کننده EXE ویندوز
-- `audio-qr-android`: فایل APK آزمایشی اندروید
-
-این خروجی‌ها به‌صورت پیش‌فرض امضای انتشار ندارند. برای انتشار عمومی باید Windows Code Signing و Android Release Keystore را جداگانه تنظیم کنید.
-
-## توصیه‌های صوتی
-
-- برای دقت بیشتر از WAV استفاده کنید.
-- تبدیل چندباره به MP3 ممکن است اطلاعات فرکانس بالا را حذف کند.
-- بعضی پیام‌رسان‌ها، حذف نویز یا فشرده‌سازی شدیدی اعمال می‌کنند.
-- حالت کم‌شنیدار را حتماً روی دستگاه‌های مقصد آزمایش کنید.
-- اگر رمزگشایی سخت است، قدرت سیگنال را روی «قوی» قرار دهید.
-
-## مجوز
-
-این پروژه با مجوز MIT منتشر شده است.
+MIT License. See `LICENSE` and `SECURITY.md`.
