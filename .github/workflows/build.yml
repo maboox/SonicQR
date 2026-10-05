@@ -16,7 +16,7 @@ concurrency:
 jobs:
   verify:
     name: Codec and interface checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -48,7 +48,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Check Electron permissions and native saving
-        run: npx electron --use-fake-device-for-media-stream tests/electron-smoke.cjs
+        run: npm run test:desktop
       - name: Build Windows executables
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
@@ -63,7 +63,7 @@ jobs:
   android:
     name: Android APK
     needs: verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -79,7 +79,12 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
+        with:
+          # The obsolete 'tools' package is no longer served by Google.
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+          cmdline-tools-version: '12266719'
+          log-accepted-android-sdk-licenses: 'false'
       - uses: gradle/actions/setup-gradle@v4
       - run: npm ci
       - run: npm run android:prepare

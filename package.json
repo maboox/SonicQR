@@ -1,6 +1,6 @@
 {
   "name": "audio-qr",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Offline sound messaging for Android and Windows",
   "main": "main.cjs",
   "author": "Audio QR contributors",
@@ -10,6 +10,7 @@
     "web": "node scripts/build-web.cjs",
     "test": "node --test tests/*.test.mjs",
     "test:ui": "node tests/ui-smoke.cjs",
+    "test:desktop": "npm run web && electron --use-fake-device-for-media-stream tests/electron-smoke.cjs",
     "start": "npm run web && electron .",
     "dist:win": "npm run web && electron-builder --win nsis portable --x64 --publish never",
     "android:prepare": "npm run web && node scripts/prepare-android.cjs",

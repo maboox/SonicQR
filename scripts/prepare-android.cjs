@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
+const { version } = require(path.join(root, 'package.json'));
 const android = path.join(root, 'android');
 const cli = path.join(root, 'node_modules/@capacitor/cli/bin/capacitor');
 function cap(...args) { execFileSync(process.execPath, [cli, ...args], { cwd: root, stdio: 'inherit' }); }
@@ -23,7 +24,7 @@ manifest = manifest.replace(/(android:windowSoftInputMode="adjustResize")\s+andr
 manifest = manifest.replace(/(android:usesCleartextTraffic="false")\s+android:usesCleartextTraffic="false"/g, '$1');
 fs.writeFileSync(manifestPath, manifest);
 const gradlePath = path.join(android, 'app/build.gradle');
-let gradle = fs.readFileSync(gradlePath, 'utf8').replace(/versionCode\s+\d+/, 'versionCode 2').replace(/versionName\s+"[^"]+"/, 'versionName "1.1.0"');
+let gradle = fs.readFileSync(gradlePath, 'utf8').replace(/versionCode\s+\d+/, 'versionCode 3').replace(/versionName\s+"[^"]+"/, `versionName "${version}"`);
 gradle = gradle.replace(/\ntry \{[\s\S]*?Push Notifications won't work"\)\n\}/, '');
 if (!gradle.includes("apply from: '../../native/android/signing.gradle'")) gradle += "\napply from: '../../native/android/signing.gradle'\n";
 fs.writeFileSync(gradlePath, gradle);
